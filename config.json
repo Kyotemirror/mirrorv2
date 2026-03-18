@@ -6,8 +6,9 @@
   },
 
   "clock": {
-    "format": "%H:%M:%S",
-    "font_size": 64
+  "format": "%I:%M %p",
+  "font_size": 50
+}
   },
 
   "colors": {
