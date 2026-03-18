@@ -3,29 +3,41 @@ from datetime import datetime
 
 
 class MirrorState:
-    def __init__(self):
-        # Font setup
-        # None = default font (safe on Raspberry Pi)
-        self.font = pygame.font.SysFont(None, 64)
+    def __init__(self, config):
+        self.config = config
 
-        # Cached time string
+        # Clock config
+        clock_cfg = config["clock"]
+        color_cfg = config["colors"]
+
+        self.time_format = "%I:%M %p"  # 12-hour time with AM/PM
+        self.font = pygame.font.SysFont(None, clock_cfg["font_size"])
+
+        # Colors
+        self.text_color = color_cfg["text"]
+        self.bg_color = color_cfg["background"]
+
         self.time_text = ""
 
     def update(self):
-        # Update the clock once per frame
-        self.time_text = datetime.now().strftime("%I:%M %p").lstrip("0")
+        # Update the clock text
+        self.time_text = datetime.now().strftime(self.time_format).lstrip("0")
 
     def draw(self, screen):
-        # Clear screen (black background)
-        screen.fill((0, 0, 0))
+        # Clear background
+        screen.fill(self.bg_color)
 
-        # Render clock text
+        # Render clock
         text_surface = self.font.render(
             self.time_text,
             True,
-            (255, 255, 255)
+            self.text_color
         )
 
-        # Center the text on a 480x320 screen
-        rect = text_surface.get_rect(center=(240, 160))
+        # Position: top-right with margin
+        margin = 10
+        rect = text_surface.get_rect(
+            topright=(screen.get_width() - margin, margin)
+        )
+
         screen.blit(text_surface, rect)
