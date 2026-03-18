@@ -1,68 +1,33 @@
 import pygame
 from datetime import datetime
 
-from weather import WeatherWidget
-
 
 class MirrorState:
     def __init__(self, config):
         self.config = config
 
-        # ----------------------------------------------------
-        # Clock configuration
-        # ----------------------------------------------------
-        clock_cfg = config.get("clock", {})
-        color_cfg = config.get("colors", {})
+        # ✅ Safe colors (ignore config for now)
+        self.bg_color = (0, 0, 0)
+        self.text_color = (255, 255, 255)
 
-        # Time format
-        show_seconds = clock_cfg.get("show_seconds", False)
-        self.time_format = "%I:%M:%S %p" if show_seconds else "%I:%M %p"
+        # ✅ Big readable font
+        self.font = pygame.font.SysFont(None, 72)
 
-        # Font
-        font_size = clock_cfg.get("font_size", 72)
-        self.clock_font = pygame.font.SysFont(None, font_size)
+        self.time_text = "STARTING"
 
-        # Colors (JSON → tuple)
-        self.text_color = tuple(color_cfg.get("text", [255, 255, 255]))
-        self.bg_color = tuple(color_cfg.get("background", [0, 0, 0]))
-
-        # Clock state
-        self.time_text = ""
-        self.last_time_text = None
-
-        # ----------------------------------------------------
-        # Weather widget
-        # ----------------------------------------------------
-        self.weather = None
-        weather_cfg = config.get("weather", {})
-        if weather_cfg.get("enabled", False):
-            self.weather = WeatherWidget(config)
-
-    # ----------------------------------------------------
-    # Event handling (touch / keys later)
-    # ----------------------------------------------------
-    def handle_event(self, event):
-        # Placeholder for future input handling
-        pass
-
-    # ----------------------------------------------------
-    # Update logic
-    # ----------------------------------------------------
     def update(self):
-        now_text = datetime.now().strftime(self.time_format).lstrip("0")
+        self.time_text = datetime.now().strftime("%I:%M %p").lstrip("0")
 
-        if now_text != self.last_time_text:
-            self.time_text = now_text
-            self.last_time_text = now_text
-
-        if self.weather:
-            self.weather.update()
-
-    # ----------------------------------------------------
-    # Rendering
-    # ----------------------------------------------------
     def draw(self, screen):
-        # Clear background
+        # ✅ BRIGHT BACKGROUND PROOF
         screen.fill(self.bg_color)
 
-        # -----------------------
+        text_surface = self.font.render(
+            self.time_text, True, self.text_color
+        )
+
+        rect = text_surface.get_rect(
+            center=screen.get_rect().center
+        )
+
+        screen.blit(text_surface, rect)
