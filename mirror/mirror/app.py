@@ -1,6 +1,6 @@
 import time
-from mirror.state import MirrorState
-from mirror.config import Config
+from .state import MirrorState
+from .config import Config
 
 class MirrorApp:
     def __init__(self):
