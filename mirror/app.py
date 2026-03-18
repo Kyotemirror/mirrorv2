@@ -19,7 +19,7 @@ class MirrorApp:
         self.clock = pygame.time.Clock()
 
         # App state
-        self.state = MirrorState()
+        self.state = MirrorState(CONFIG)
         self.running = True
 
     def run(self):
