@@ -1,5 +1,6 @@
 import pygame
 from datetime import datetime
+import os
 
 from weather import WeatherWidget
 
@@ -28,25 +29,60 @@ class MirrorState:
         self.date_text = ""
 
         # -----------------
-        # Weather widget
+        # Weather
         # -----------------
         self.weather = WeatherWidget(config)
 
+        # -----------------
+        # Logo (SAFE)
+        # -----------------
+        self.logo = None
+        self.logo_rect = None
+
+        logo_path = os.path.join(
+            os.path.dirname(__file__), "assets", "logo.png"
+        )
+
+        if os.path.exists(logo_path):
+            try:
+                self.logo = pygame.image.load(logo_path).convert_alpha()
+
+                # Scale logo to fit nicely
+                max_width = 160
+                scale = max_width / self.logo.get_width()
+                new_size = (
+                    int(self.logo.get_width() * scale),
+                    int(self.logo.get_height() * scale)
+                )
+                self.logo = pygame.transform.smoothscale(self.logo, new_size)
+
+                # Optional: make subtle
+                self.logo.set_alpha(90)
+
+                self.logo_rect = self.logo.get_rect()
+                self.logo_rect.bottomright = (460, 300)  # for 480x320
+
+            except Exception as e:
+                print("Logo load failed:", e)
+
     def update(self):
         now = datetime.now()
-
         self.time_text = now.strftime("%I:%M %p").lstrip("0")
         self.date_text = now.strftime("%A, %b %d")
-
         self.weather.update()
 
     def draw(self, screen):
         screen.fill(self.bg_color)
-
         screen_rect = screen.get_rect()
 
         # -----------------
-        # Date (above clock)
+        # Logo (background branding)
+        # -----------------
+        if self.logo and self.logo_rect:
+            screen.blit(self.logo, self.logo_rect)
+
+        # -----------------
+        # Date
         # -----------------
         date_surface = self.date_font.render(
             self.date_text, True, self.text_color
@@ -57,7 +93,7 @@ class MirrorState:
         screen.blit(date_surface, date_rect)
 
         # -----------------
-        # Clock (center)
+        # Clock
         # -----------------
         clock_surface = self.clock_font.render(
             self.time_text, True, self.text_color
@@ -66,6 +102,6 @@ class MirrorState:
         screen.blit(clock_surface, clock_rect)
 
         # -----------------
-        # Weather (top-left)
+        # Weather
         # -----------------
         self.weather.draw(screen)
