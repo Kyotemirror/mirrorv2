@@ -1,7 +1,7 @@
 {
   "colors": {
-    "background": [192, 192, 192],
-    "text": [0, 0, 0]
+    "background":[0, 0, 0] ,
+    "text": [192, 192, 192]
   },
   "clock": {
     "font_size": 72
