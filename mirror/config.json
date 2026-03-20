@@ -16,26 +16,3 @@
     "font_size": 32,
     "update_interval": 600
   },
-
-  "news": {
-    "enabled": true,
-    "font_size": 22,
-    "update_interval": 900,
-    "rotate_seconds": 8,
-    "max_items": 40,
-    "display_items": 1,
-    "show_source": true,
-    "position": "bottom-left",
-    "margin": 20,
-    "feeds": [
-      {
-        "name": "KTVB Local",
-        "url": "https://www.ktvb.com/feeds/syndication/rss/news/local"
-      },
-      {
-        "name": "KTVB News",
-        "url": "https://www.ktvb.com/feeds/syndication/rss/news"
-      }
-    ]
-  }
-}
