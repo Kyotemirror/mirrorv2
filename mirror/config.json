@@ -1,4 +1,8 @@
 {
+  "colors": {
+    "background": [192, 192, 192],
+    "text": [0, 0, 0]
+  },
   "clock": {
     "font_size": 72
   },
@@ -9,9 +13,5 @@
     "units": "imperial",
     "font_size": 35,
     "update_interval": 600
-  },
-  "colors": {
-    "text": [0, 0, 0],
-    "background": [192, 192, 192]
   }
 }
