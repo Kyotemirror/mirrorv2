@@ -76,10 +76,13 @@ class MirrorState:
         screen_rect = screen.get_rect()
 
         # -----------------
-        # Logo (background branding)
-        # -----------------
-        if self.logo and self.logo_rect:
-            screen.blit(self.logo, self.logo_rect)
+# Logos (background branding)
+# -----------------
+if self.logo_left and self.logo_left_rect:
+    screen.blit(self.logo_left, self.logo_left_rect)
+
+if self.logo_right and self.logo_right_rect:
+    screen.blit(self.logo_right, self.logo_right_rect)
 
         # -----------------
         # Date
