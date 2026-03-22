@@ -8,7 +8,7 @@ from state import MirrorState
 # Screen configuration
 WIDTH = 480
 HEIGHT = 320
-FPS = 30
+FPS = 25
 
 
 def load_config():
