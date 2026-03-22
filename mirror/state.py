@@ -54,21 +54,23 @@ class MirrorState:
                 int(logo.get_height() * scale)
             )
             logo = pygame.transform.smoothscale(logo, new_size)
-            logo.set_alpha(90)
+            logo.set_alpha(180)  # visible but subtle
             return logo
 
         try:
+            # Right logo
             if os.path.exists(right_logo_path):
                 self.logo_right = load_logo(right_logo_path)
                 self.logo_right_rect = self.logo_right.get_rect()
                 self.logo_right_rect.bottomright = (460, 300)  # 480x320 screen
 
+            # Left logo (positioned correctly)
             if os.path.exists(left_logo_path) and self.logo_right_rect:
                 self.logo_left = load_logo(left_logo_path)
                 self.logo_left_rect = self.logo_left.get_rect()
 
                 spacing = 10
-                self.logo_left_rect.bottomright = (
+                self.logo_left_rect.bottomleft = (
                     self.logo_right_rect.left - spacing,
                     self.logo_right_rect.bottom
                 )
