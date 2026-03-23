@@ -8,7 +8,7 @@ A lightweight, Raspberry Pi–friendly **Smart Mirror dashboard** built with **P
 Designed for reliability, simplicity, and subtle branding.
 
 ---
-
+For simple clean look (this one)
 ## ✨ Features
 
 - 🕒 **Centered Clock**
@@ -20,4 +20,10 @@ Designed for reliability, simplicity, and subtle branding.
 
 ---
 
-## 📂 Project Structure
+Future updates include
+
+---
+More apps for the screen, 
+as well a wake when near function with ultrasonic tech.
+
+
