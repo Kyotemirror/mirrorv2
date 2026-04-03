@@ -17,6 +17,9 @@ PLYMOUTH_THEME_DIR="/usr/share/plymouth/themes/$BOOT_THEME_NAME"
 BOOT_BG_SRC="$APP_DIR/assets/boot_background.png"
 BOOT_LOGO_SRC="$APP_DIR/assets/logo.png"
 
+CMDLINE="/boot/cmdline.txt"
+CONFIG_TXT="/boot/config.txt"
+
 # =========================
 # Root check
 # =========================
@@ -31,14 +34,19 @@ whiptail --title "$APP_NAME Setup" \
 --msgbox "Welcome to the $APP_NAME setup wizard.\n\nThis will guide you through Wi‑Fi setup, auto‑start, and fast branded boot." 12 70
 
 # =========================
-# Wi‑Fi Setup (Scan List)
+# Wi‑Fi Setup
 # =========================
 if whiptail --title "$APP_NAME Setup" \
 --yesno "Do you want to connect to Wi‑Fi now?" 10 60; then
 
   ip link set "$IFACE" up
 
-  SSIDS=$(iw dev "$IFACE" scan 2>/dev/null | grep "SSID:" | sed 's/SSID: //' | grep -v '^$' | sort -u)
+  # Allow scanning by temporarily disconnecting
+  wpa_cli -i "$IFACE" disconnect >/dev/null 2>&1
+  sleep 2
+
+  SSIDS=$(iw dev "$IFACE" scan 2>/dev/null | \
+          grep "SSID:" | sed 's/SSID: //' | grep -v '^$' | sort -u)
 
   if [[ -z "$SSIDS" ]]; then
     whiptail --msgbox "❌ No Wi‑Fi networks found.\n\nTry again later." 10 60
@@ -64,8 +72,13 @@ if whiptail --title "$APP_NAME Setup" \
   [[ -z "$WIFI_PASS" ]] && exit 1
 
   cp "$WPA_CONF" "$WPA_CONF.bak.$(date +%s)"
+
+  # Remove existing network block for this SSID
+  sed -i "/network={/,+5{/ssid=\"$SELECTED_SSID\"/d}" "$WPA_CONF"
+
   wpa_passphrase "$SELECTED_SSID" "$WIFI_PASS" >> "$WPA_CONF"
   wpa_cli -i "$IFACE" reconfigure >/dev/null 2>&1
+  wpa_cli -i "$IFACE" reconnect >/dev/null 2>&1
 
   whiptail --msgbox "✅ Wi‑Fi configured successfully." 10 60
 fi
@@ -76,10 +89,16 @@ fi
 if whiptail --title "$APP_NAME Setup" \
 --yesno "Enable Smart Mirror to start automatically on boot?" 10 60; then
 
+  if ! command -v startx >/dev/null 2>&1; then
+    whiptail --msgbox \
+    "⚠️ No graphical environment detected.\n\nSmart Mirror requires X11.\nInstall Raspberry Pi OS with desktop." \
+    12 70
+  fi
+
   cat > "$SERVICE_PATH" <<EOF
 [Unit]
 Description=Smart Mirror Pygame App
-After=network.target graphical.target
+After=network-online.target graphical.target
 Wants=network-online.target
 
 [Service]
@@ -98,7 +117,6 @@ TimeoutStopSec=10
 WantedBy=graphical.target
 EOF
 
-  systemctl daemon-reexec
   systemctl daemon-reload
   systemctl enable "$SERVICE_NAME"
 
@@ -114,9 +132,19 @@ if whiptail --title "$APP_NAME Setup" \
   apt-get update
   apt-get install -y plymouth plymouth-themes
 
-  sed -i 's/console=tty1//g' /boot/cmdline.txt
-  grep -q "quiet splash" /boot/cmdline.txt || \
-    sed -i 's/$/ quiet splash loglevel=0 vt.global_cursor_default=0/' /boot/cmdline.txt
+  # Harden cmdline.txt
+  sed -i \
+    -e 's/console=tty1//g' \
+    -e 's/loglevel=[0-9]//g' \
+    -e 's/vt.global_cursor_default=[0-9]//g' \
+    "$CMDLINE"
+
+  grep -q "quiet splash" "$CMDLINE" || \
+    sed -i 's/$/ quiet splash loglevel=0 vt.global_cursor_default=0/' "$CMDLINE"
+
+  # Ensure firmware splash is disabled
+  grep -q "^disable_splash=1" "$CONFIG_TXT" || \
+    echo "disable_splash=1" >> "$CONFIG_TXT"
 
   mkdir -p "$PLYMOUTH_THEME_DIR"
 
@@ -151,7 +179,7 @@ EOF
 
   plymouth-set-default-theme "$BOOT_THEME_NAME" -R
 
-  whiptail --msgbox "✅ Fast branded boot enabled.\n\nYour logo will appear immediately on power‑on." 10 70
+  whiptail --msgbox "✅ Fast branded boot enabled.\n\nFirmware splash disabled and logo will appear immediately." 10 70
 fi
 
 # =========================
