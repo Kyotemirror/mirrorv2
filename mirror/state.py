@@ -144,6 +144,6 @@ class MirrorState:
         screen.blit(clock_surface, clock_rect)
 
         # -----------------
-        # Weather
+        # Weather (includes animated icon)
         # -----------------
         self.weather.draw(screen)
