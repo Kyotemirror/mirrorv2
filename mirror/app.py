@@ -5,15 +5,10 @@ import pygame
 
 from state import MirrorState
 
-# Screen configuration
-WIDTH = 480
-HEIGHT = 320
-FPS = 25
-
 
 def load_config():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(base_dir, "config.json")
+    config_path = os.path.join(os.path.dirname(base_dir), "config.json")
     with open(config_path, "r") as f:
         return json.load(f)
 
@@ -23,27 +18,31 @@ class MirrorApp:
         pygame.init()
         pygame.font.init()
 
-        # Fullscreen display (safe)
-        self.screen = pygame.display.set_mode(
-            (WIDTH, HEIGHT),
-            pygame.FULLSCREEN
-        )
-        pygame.display.set_caption("Smart Mirror")
+        self.config = load_config()
+        dcfg = self.config.get("display", {})
 
+        width = int(dcfg.get("width", 480))
+        height = int(dcfg.get("height", 320))
+        fullscreen = bool(dcfg.get("fullscreen", True))
+
+        flags = pygame.FULLSCREEN if fullscreen else 0
+        self.screen = pygame.display.set_mode((width, height), flags)
+        pygame.display.set_caption("Smart Mirror")
         pygame.mouse.set_visible(False)
 
         self.clock = pygame.time.Clock()
+        self.fps = int(dcfg.get("fps", 25))
 
-        config = load_config()
-        self.state = MirrorState(config)
-
+        self.state = MirrorState(self.config)
         self.running = True
 
     def run(self):
         print("✅ Mirror app started")
-
         try:
             while self.running:
+                dt = self.clock.tick(self.fps) / 1000.0  # seconds
+
+                pygame.event.pump()
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.running = False
@@ -51,12 +50,13 @@ class MirrorApp:
                         if event.key in (pygame.K_ESCAPE, pygame.K_q):
                             self.running = False
 
-                self.state.update()
+                self.state.update(dt)
                 self.state.draw(self.screen)
 
                 pygame.display.flip()
-                self.clock.tick(FPS)
 
+        except KeyboardInterrupt:
+            pass
         finally:
             self.shutdown()
 
@@ -67,5 +67,4 @@ class MirrorApp:
 
 
 if __name__ == "__main__":
-    app = MirrorApp()
-    app.run()
+    MirrorApp().run()
