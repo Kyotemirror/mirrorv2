@@ -6,13 +6,19 @@
   "clock": {
     "font_size": 72
   },
-"weather": {
-  "enabled": true,
-  "provider": "open-meteo",
-  "latitude": 43.6121,
-  "longitude": -116.3915,
-  "units": "fahrenheit",
-  "font_size": 32,
-  "update_interval": 900
-}
+  "weather": {
+    "enabled": true,
+    "units": "fahrenheit",
+    "font_size": 32,
+    "update_interval": 900,
+
+    "city": "Meridian",
+    "country": "US"
+
+    /*
+    OR use fixed coords instead (fastest / most reliable):
+    "latitude": 43.6121,
+    "longitude": -116.3915
+    */
+  }
 }
