@@ -1,105 +1,65 @@
-import os
-import pygame
-
-from pages import PageManager, build_pages
+import os, pygame
+from pages import build_pages, PageManager
 from ticker import TickerBar
-
 
 class MirrorState:
     def __init__(self, config):
         self.config = config
+        self.bg = tuple(config["colors"]["background"])
 
-        colors = config.get("colors", {})
-        self.bg_color = tuple(colors.get("background", [0, 0, 0]))
+        self.layout = {
+            "margin": 24,
+            "top_safe": 20,
+            "bottom_safe": 12
+        }
 
         self.pages = build_pages(config)
-        self.page_manager = PageManager(config, self.pages)
-
+        self.manager = PageManager(config, self.pages)
         self.ticker = TickerBar(config)
-
-        # Logos
-        self.logo_cfg = config.get("logos", {})
-        self.logo_left = None
-        self.logo_right = None
-        if self.logo_cfg.get("enabled", True):
-            self._load_logos()
+        self._load_logos()
 
     def _load_logos(self):
-        def load_logo(path):
-            logo = pygame.image.load(path).convert_alpha()
-            max_width = int(self.logo_cfg.get("max_width", 160))
-            if logo.get_width() > max_width:
-                scale = max_width / logo.get_width()
-                logo = pygame.transform.smoothscale(
-                    logo,
-                    (int(logo.get_width() * scale), int(logo.get_height() * scale))
-                )
-            logo.set_alpha(int(self.logo_cfg.get("alpha", 180)))
-            return logo
+        self.left = self.right = None
+        cfg = self.config["logos"]
+        root = os.path.dirname(os.path.dirname(__file__))
 
-        try:
-            left_path = self.logo_cfg.get("left")
-            right_path = self.logo_cfg.get("right")
+        def load(path):
+            img = pygame.image.load(path).convert_alpha()
+            w = cfg["max_width"]
+            if img.get_width() > w:
+                s = w / img.get_width()
+                img = pygame.transform.smoothscale(img, (int(img.get_width()*s), int(img.get_height()*s)))
+            img.set_alpha(cfg["alpha"])
+            return img
 
-            if left_path and os.path.exists(os.path.join(os.path.dirname(os.path.dirname(__file__)), left_path)):
-                self.logo_left = load_logo(os.path.join(os.path.dirname(os.path.dirname(__file__)), left_path))
-
-            if right_path and os.path.exists(os.path.join(os.path.dirname(os.path.dirname(__file__)), right_path)):
-                self.logo_right = load_logo(os.path.join(os.path.dirname(os.path.dirname(__file__)), right_path))
-
-        except Exception as e:
-            print("Logo load failed:", e)
+        if cfg["enabled"]:
+            lp = os.path.join(root, cfg["left"])
+            rp = os.path.join(root, cfg["right"])
+            if os.path.exists(lp): self.left = load(lp)
+            if os.path.exists(rp): self.right = load(rp)
 
     def update(self, dt):
-        self.page_manager.update(dt)
-
-        # Set ticker text from current page (page-specific ticker)
-        ticker_text = self.page_manager.current_ticker_text()
-        self.ticker.set_text(ticker_text)
-
+        self.manager.update(dt)
+        self.ticker.set_text(self.manager.ticker_text())
         self.ticker.update(dt)
 
     def draw(self, screen):
-        screen.fill(self.bg_color)
+        screen.fill(self.bg)
 
-        # Draw current page in a content area above ticker
-        content_rect = screen.get_rect().copy()
-        if self.ticker.enabled:
-            content_rect.height -= self.ticker.height
+        rect = screen.get_rect()
+        rect.inflate_ip(-self.layout["margin"]*2, -(self.layout["top_safe"]+self.layout["bottom_safe"]))
+        rect.top += self.layout["top_safe"]
+        rect.height -= self.ticker.height
 
-        self.page_manager.draw(screen, content_rect)
-
-        # Draw logos near bottom (above ticker)
-        self._draw_logos(screen, content_rect)
-
-        # Draw ticker last (always on top)
+        self.manager.draw(screen, rect)
+        self._draw_logos(screen, rect)
         self.ticker.draw(screen)
 
-    def _draw_logos(self, screen, content_rect):
-        if not (self.logo_left or self.logo_right):
-            return
-
-        spacing = int(self.logo_cfg.get("spacing", 10))
-        bottom_margin = int(self.logo_cfg.get("bottom_margin", 6))
-
-        if self.logo_left and self.logo_right:
-            total_width = self.logo_left.get_width() + spacing + self.logo_right.get_width()
-            max_height = max(self.logo_left.get_height(), self.logo_right.get_height())
-
-            group_rect = pygame.Rect(0, 0, total_width, max_height)
-            group_rect.midbottom = (content_rect.centerx, content_rect.bottom - bottom_margin)
-
-            left_rect = self.logo_left.get_rect()
-            left_rect.bottomleft = group_rect.bottomleft
-
-            right_rect = self.logo_right.get_rect()
-            right_rect.bottomleft = (left_rect.right + spacing, left_rect.bottom)
-
-            screen.blit(self.logo_left, left_rect)
-            screen.blit(self.logo_right, right_rect)
-
-        else:
-            logo = self.logo_right or self.logo_left
-            rect = logo.get_rect()
-            rect.midbottom = (content_rect.centerx, content_rect.bottom - bottom_margin)
-            screen.blit(logo, rect)
+    def _draw_logos(self, screen, rect):
+        if self.left and self.right:
+            spacing = self.config["logos"]["spacing"]
+            total = self.left.get_width() + spacing + self.right.get_width()
+            y = rect.bottom - self.config["logos"]["bottom_margin"]
+            x = rect.centerx - total//2
+            screen.blit(self.left, (x, y-self.left.get_height()))
+            screen.blit(self.right,(x+self.left.get_width()+spacing, y-self.right.get_height()))
