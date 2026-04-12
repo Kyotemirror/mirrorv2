@@ -1,0 +1,24 @@
+{
+  "colors": {
+    "background": [0, 0, 0],
+    "text": [192, 192, 192]
+  },
+  "clock": {
+    "font_size": 72
+  },
+  "weather": {
+    "enabled": true,
+    "units": "fahrenheit",
+    "font_size": 32,
+    "update_interval": 900,
+
+    "city": "Meridian",
+    "country": "US"
+
+    /*
+    OR use fixed coords instead (fastest / most reliable):
+    "latitude": 43.6121,
+    "longitude": -116.3915
+    */
+  }
+}
