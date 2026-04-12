@@ -1,204 +1,116 @@
-import pygame
-from datetime import datetime
-
+import pygame, datetime
 from weather import WeatherWidget
 from news import RssNewsProvider
 from quotes import QuotesProvider
 
-
-def build_pages(config):
-    order = config.get("pages", {}).get("order", ["time", "weather", "news", "quotes"])
-    pages = []
-    for name in order:
-        if name == "time":
-            pages.append(TimePage(config))
-        elif name == "weather" and config.get("weather", {}).get("enabled", False):
-            pages.append(WeatherPage(config))
-        elif name == "news" and config.get("news", {}).get("enabled", False):
-            pages.append(NewsPage(config))
-        elif name == "quotes" and config.get("quotes", {}).get("enabled", False):
-            pages.append(QuotesPage(config))
-    return pages
-
+def build_pages(cfg):
+    return [
+        TimePage(cfg),
+        WeatherPage(cfg),
+        NewsPage(cfg),
+        QuotesPage(cfg)
+    ]
 
 class PageManager:
-    def __init__(self, config, pages):
-        self.config = config
-        self.pages = pages or [TimePage(config)]
+    def __init__(self, cfg, pages):
+        self.pages = pages
         self.idx = 0
-        self.elapsed = 0.0
-        self.switch_interval = float(config.get("pages", {}).get("switch_interval", 60))
+        self.t = 0
+        self.interval = cfg["pages"]["switch_interval"]
 
     def update(self, dt):
-        self.elapsed += dt
-        if self.elapsed >= self.switch_interval:
-            self.elapsed = 0.0
+        self.t += dt
+        if self.t >= self.interval:
+            self.t = 0
             self.idx = (self.idx + 1) % len(self.pages)
-
         self.pages[self.idx].update(dt)
 
-    def draw(self, screen, content_rect):
-        self.pages[self.idx].draw(screen, content_rect)
-
-    def current_ticker_text(self):
-        return self.pages[self.idx].ticker_text()
-
-
-# -------------------------
-# Pages
-# -------------------------
-
-class TimePage:
-    def __init__(self, config):
-        self.config = config
-        colors = config.get("colors", {})
-        self.text_color = tuple(colors.get("text", [192, 192, 192]))
-
-        ccfg = config.get("clock", {})
-        self.clock_font = pygame.font.SysFont(None, int(ccfg.get("font_size", 72)))
-        self.date_font = pygame.font.SysFont(None, int(ccfg.get("date_font_size", 32)))
-
-        self.time_text = ""
-        self.date_text = ""
-
-        self._time_surf = None
-        self._date_surf = None
-        self._last_minute = None
-        self._last_day = None
-
-    def update(self, dt):
-        now = datetime.now()
-        minute_key = now.strftime("%Y-%m-%d %H:%M")
-        day_key = now.strftime("%Y-%m-%d")
-
-        if minute_key != self._last_minute:
-            self.time_text = now.strftime("%I:%M %p").lstrip("0")
-            self._time_surf = self.clock_font.render(self.time_text, True, self.text_color)
-            self._last_minute = minute_key
-
-        if day_key != self._last_day:
-            self.date_text = now.strftime("%A, %b %d")
-            self._date_surf = self.date_font.render(self.date_text, True, self.text_color)
-            self._last_day = day_key
-
     def draw(self, screen, rect):
-        if self._date_surf:
-            drect = self._date_surf.get_rect(center=(rect.centerx, rect.centery - 50))
-            screen.blit(self._date_surf, drect)
-
-        if self._time_surf:
-            trect = self._time_surf.get_rect(center=rect.center)
-            screen.blit(self._time_surf, trect)
+        self.pages[self.idx].draw(screen, rect)
 
     def ticker_text(self):
-        now = datetime.now()
-        return now.strftime("Time • %I:%M %p  •  %A, %b %d").replace(" 0", " ")
+        return self.pages[self.idx].ticker()
 
+class TimePage:
+    def __init__(self, cfg):
+        c = cfg["colors"]["text"]
+        self.color = tuple(c)
+        self.font = pygame.font.SysFont(None, cfg["clock"]["font_size"])
+        self.datef = pygame.font.SysFont(None, cfg["clock"]["date_font_size"])
+
+    def update(self, dt): pass
+
+    def draw(self, s, r):
+        now = datetime.datetime.now()
+        t = self.font.render(now.strftime("%I:%M %p").lstrip("0"), True, self.color)
+        d = self.datef.render(now.strftime("%A, %b %d"), True, self.color)
+        s.blit(d, d.get_rect(center=(r.centerx, r.centery-48)))
+        s.blit(t, t.get_rect(center=r.center))
+
+    def ticker(self):
+        return "Time • " + datetime.datetime.now().strftime("%I:%M %p").lstrip("0")
 
 class WeatherPage:
-    def __init__(self, config):
-        self.config = config
-        self.weather = WeatherWidget(config)
-
-        colors = config.get("colors", {})
-        self.text_color = tuple(colors.get("text", [192, 192, 192]))
-        self.big_font = pygame.font.SysFont(None, 64)
+    def __init__(self, cfg):
+        self.weather = WeatherWidget(cfg)
+        self.color = tuple(cfg["colors"]["text"])
+        self.big = pygame.font.SysFont(None, 64)
 
     def update(self, dt):
         self.weather.update()
 
-    def draw(self, screen, rect):
-        # Draw animated icon + small text via widget (top-left)
-        self.weather.draw(screen)
+    def draw(self, s, r):
+        self.weather.draw(s)
+        t = self.big.render(self.weather.temperature, True, self.color)
+        s.blit(t, t.get_rect(center=r.center))
+        d = pygame.font.SysFont(None, 28).render(self.weather.description, True, self.color)
+        s.blit(d, d.get_rect(center=(r.centerx, r.centery+40)))
 
-        # Big center summary (temp)
-        temp = getattr(self.weather, "temperature", "--")
-        desc = getattr(self.weather, "description", "")
-        big = self.big_font.render(temp, True, self.text_color)
-        brect = big.get_rect(center=rect.center)
-        screen.blit(big, brect)
-
-        if desc:
-            small = pygame.font.SysFont(None, 28).render(desc, True, self.text_color)
-            srect = small.get_rect(center=(rect.centerx, brect.bottom + 20))
-            screen.blit(small, srect)
-
-    def ticker_text(self):
-        temp = getattr(self.weather, "temperature", "--")
-        desc = getattr(self.weather, "description", "")
-        return f"Weather • {temp} • {desc}".strip()
-
+    def ticker(self):
+        return f"Weather • {self.weather.temperature} • {self.weather.description}"
 
 class NewsPage:
-    def __init__(self, config):
-        self.config = config
-        self.news = RssNewsProvider(config)
+    def __init__(self, cfg):
+        self.news = RssNewsProvider(cfg)
+        self.c = tuple(cfg["colors"]["text"])
+        self.font = pygame.font.SysFont(None, 28)
 
-        colors = config.get("colors", {})
-        self.text_color = tuple(colors.get("text", [192, 192, 192]))
-        self.title_font = pygame.font.SysFont(None, 40)
-        self.item_font = pygame.font.SysFont(None, 26)
+    def update(self, dt): self.news.update()
 
-    def update(self, dt):
-        self.news.update()
+    def draw(self, s, r):
+        y = r.top
+        for h in self.news.headlines[:4]:
+            surf = self.font.render(h, True, self.c)
+            s.blit(surf, (r.left, y))
+            y += surf.get_height()+8
 
-    def draw(self, screen, rect):
-        title = self.title_font.render("News", True, self.text_color)
-        screen.blit(title, (rect.left + 16, rect.top + 12))
-
-        headlines = self.news.headlines[:5] if self.news.headlines else ["News unavailable"]
-        y = rect.top + 58
-        for h in headlines:
-            surf = self.item_font.render("• " + h, True, self.text_color)
-            screen.blit(surf, (rect.left + 16, y))
-            y += surf.get_height() + 6
-            if y > rect.bottom - 20:
-                break
-
-    def ticker_text(self):
-        return self.news.get_ticker_text(prefix="News • ")
-
+    def ticker(self):
+        return "News • " + " • ".join(self.news.headlines)
 
 class QuotesPage:
-    def __init__(self, config):
-        self.config = config
-        self.quotes = QuotesProvider(config)
-
-        colors = config.get("colors", {})
-        self.text_color = tuple(colors.get("text", [192, 192, 192]))
+    def __init__(self, cfg):
+        self.q = QuotesProvider(cfg)
+        self.c = tuple(cfg["colors"]["text"])
         self.font = pygame.font.SysFont(None, 34)
 
-    def update(self, dt):
-        self.quotes.update()
+    def update(self, dt): self.q.update()
 
-    def draw(self, screen, rect):
-        q = self.quotes.current_quote() or "No quotes loaded"
-        # Simple wrap (manual)
-        lines = wrap_text(q, self.font, rect.width - 40)
-        y = rect.centery - (len(lines) * 18)
-        for line in lines:
-            surf = self.font.render(line, True, self.text_color)
-            srect = surf.get_rect(center=(rect.centerx, y))
-            screen.blit(surf, srect)
+    def draw(self, s, r):
+        lines = self._wrap(self.q.current(), self.font, r.width-20)
+        y = r.centery - len(lines)*18
+        for l in lines:
+            surf = self.font.render(l, True, self.c)
+            s.blit(surf, surf.get_rect(center=(r.centerx,y)))
             y += 36
 
-    def ticker_text(self):
-        q = self.quotes.current_quote() or "No quotes loaded"
-        return f"Quote • {q}"
+    def ticker(self):
+        return "Quote • " + self.q.current()
 
-
-def wrap_text(text, font, max_width):
-    words = text.split()
-    lines = []
-    cur = ""
-    for w in words:
-        test = (cur + " " + w).strip()
-        if font.size(test)[0] <= max_width:
-            cur = test
-        else:
-            if cur:
-                lines.append(cur)
-            cur = w
-    if cur:
-        lines.append(cur)
-    return lines
+    def _wrap(self, t, f, w):
+        words, lines, cur = t.split(), [], ""
+        for w2 in words:
+            test = (cur+" "+w2).strip()
+            if f.size(test)[0] <= w: cur = test
+            else: lines.append(cur); cur = w2
+        if cur: lines.append(cur)
+        return lines
