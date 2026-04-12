@@ -3,22 +3,62 @@
     "background": [0, 0, 0],
     "text": [192, 192, 192]
   },
-  "clock": {
-    "font_size": 72
+
+  "display": {
+    "width": 480,
+    "height": 320,
+    "fullscreen": true,
+    "fps": 25
   },
+
+  "pages": {
+    "switch_interval": 60,
+    "order": ["time", "weather", "news", "quotes"]
+  },
+
+  "clock": {
+    "font_size": 72,
+    "date_font_size": 32
+  },
+
+  "ticker": {
+    "enabled": true,
+    "height": 44,
+    "font_size": 26,
+    "speed_px_per_sec": 70,
+    "padding": 12
+  },
+
   "weather": {
     "enabled": true,
     "units": "fahrenheit",
     "font_size": 32,
     "update_interval": 900,
-
-    "city": "Meridian",
-    "country": "US"
-
-    /*
-    OR use fixed coords instead (fastest / most reliable):
     "latitude": 43.6121,
     "longitude": -116.3915
-    */
+  },
+
+  "news": {
+    "enabled": true,
+    "rss_url": "https://feeds.bbci.co.uk/news/rss.xml",
+    "update_interval": 900,
+    "max_items": 10
+  },
+
+  "quotes": {
+    "enabled": true,
+    "file": "assets/quotes.txt",
+    "shuffle": true,
+    "rotate_interval": 60
+  },
+
+  "logos": {
+    "enabled": true,
+    "left": "assets/logo_left.png",
+    "right": "assets/logo.png",
+    "max_width": 160,
+    "alpha": 180,
+    "bottom_margin": 6,
+    "spacing": 10
   }
 }
