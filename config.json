@@ -8,11 +8,11 @@
     "width": 480,
     "height": 320,
     "fullscreen": true,
-    "fps": 25
+    "fps": 40
   },
 
   "pages": {
-    "switch_interval": 60,
+    "switch_interval": 5,
     "order": ["time", "weather", "news", "quotes"]
   },
 
